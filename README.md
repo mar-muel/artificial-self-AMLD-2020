@@ -1,2 +1,4 @@
-# artificial-self-AMLD-2020
-Workshop material for the AMLD 2020 workshop on "Meet your Artificial Self: Generate text that sounds like you"
+# Meet your Artificial Self: Generate text that sounds like you
+Welcome! You will find all the relevant information about the workshop here!
+
+Let's get started! :rocket:
