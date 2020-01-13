@@ -90,62 +90,56 @@ def run():
     model.to(args.device)
     history = []
     personality = []
-    history = """
-bot: hi
-bot: hey
-you: i'm a human
-bot: i'm you!
-you: you ready?
-bot: yes :)
-you: ok let's start chatting
-bot: sure, what do you want to talk about?"""
+    speaker1_tag = '<speaker1>'
+    speaker2_tag = '<speaker2>'
+    speaker1_tag_id = tokenizer.convert_tokens_to_ids(speaker1_tag)
+    speaker2_tag_id = tokenizer.convert_tokens_to_ids(speaker2_tag)
+    history = f"""
+{speaker2_tag} hi
+{speaker1_tag} hey
+{speaker2_tag} i'm a human
+{speaker1_tag} i'm you!
+{speaker2_tag} you ready?
+{speaker1_tag} yes :)
+{speaker2_tag} ok let's start chatting
+{speaker1_tag} sure, what do you want to talk about?"""
     print(history)
     print('\n[Chat with the model! Send "h" to see the full history]\n')
     history = history.split('\n')
-    __import__('pdb').set_trace()
     while True: 
         message = None
         while not message:
-            message = input('you: ')
+            message = input(f'{speaker2_tag}: ')
             if message == 'h':
                 print('\n'.join(history))
                 message = None
         # add new message to history
-        history.append(f'you: {message}')
+        history.append(f'{speaker2_tag} {message}')
         # keep only most recent conversation as input to the model
         recent_history = history[-(2*args.max_history):]
         # concatenate history into single string and add trigger word "bot:"
-        history_str = '{}\nbot:'.format('\n'.join(recent_history))
+        history_str = '{}\n{}'.format('\n'.join(recent_history), speaker1_tag)
         # tokenize text and convert into vocabulary ids (input ids)
         history_enc = tokenizer.encode(history_str, add_special_tokens=True)
         with torch.no_grad():
             out_ids = sample_sequence(history_enc, model, args)
-        out_ids = out_ids[:, len(history_enc):].tolist()
-        text = tokenizer.decode(out_ids[0], clean_up_tokenization_spaces=True)
-        text = text.replace('you :', 'you:')
-        text = text.replace('bot :', 'bot:')
-        full_output = text
+        out_ids = out_ids[:, len(history_enc):].tolist()[0]
         if not args.no_info:
             print(20*'-')
             print('Output of model:')
+            full_output = tokenizer.decode(out_ids, clean_up_tokenization_spaces=True)
             print(full_output)
             print('\nInput to the model:')
             print(history_str)
             print(20*'-' + '\n')
-        # try to infer answer from output by looking extracting from the left side of the "bot:" & "you:" keywords
-        answer = '[Could not retrieve answer from output. Try a different response.]'
-        if 'bot:' in text:
-            text = text.split('bot:')[0]
-        if 'you:' in text:
-            text = text.split('you:')[0]
-        text = text.strip()
-        if len(text) > 0:
-            answer = f'bot: {text}'
+        # Select part before speaker tags as answer
+        for i, out_id in enumerate(out_ids):
+            if out_id in [speaker1_tag_id, speaker2_tag_id]:
+                break
+        answer = '{} {}'.format(speaker1_tag, tokenizer.decode(out_ids[:i]))
         print(answer)
-        if answer.startswith('bot:'):
-            history.append(answer)
-        else:
-            history = history[:-1]
+        # add answer to history
+        history.append(answer)
 
 if __name__ == "__main__":
     run()

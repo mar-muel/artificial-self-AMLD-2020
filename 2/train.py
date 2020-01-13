@@ -20,9 +20,12 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
+from utils import generate_input_task1
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
+
+ATTR_TO_SPECIAL_TOKEN = {'additional_special_tokens': ('<speaker1>', '<speaker2>')}
 
 def read_data(f_name):
     with open(f_name, encoding="utf-8") as f:
@@ -64,6 +67,13 @@ def set_seed(args):
     if torch.cuda.device_count() > 0:
         torch.cuda.manual_seed_all(args.seed)
 
+def add_special_tokens_(model, tokenizer):
+    """ Add special tokens to the tokenizer and the model if they have not already been added. """
+    orig_num_tokens = len(tokenizer.encoder)
+    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN) # doesn't add if they are already there
+    if num_added_tokens > 0:
+        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
+
 def train():
     parser = ArgumentParser()
     parser.add_argument("--train_data", type=str, default="data/input.txt", help="Path to training data")
@@ -99,6 +109,11 @@ def train():
     model_class = GPT2LMHeadModel if "gpt2" in args.model_checkpoint else OpenAIGPTLMHeadModel
     model = model_class.from_pretrained(args.model_checkpoint)
     model.to(args.device)
+    # Add special tokens if they are not already added
+    add_special_tokens_(model, tokenizer)
+
+    # Generate input data
+    generate_input_task1('../../Chatistics/data', speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=False)
 
     # Get data loaders
     logger.info("Prepare datasets")
