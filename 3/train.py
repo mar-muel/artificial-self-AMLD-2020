@@ -16,7 +16,7 @@ from transformers import (
     GPT2Tokenizer,
     WEIGHTS_NAME,
     CONFIG_NAME,
-    WarmupLinearSchedule,
+    get_linear_schedule_with_warmup,
 )
 from utils import make_logdir, get_chatistics_dataset
 
@@ -119,13 +119,13 @@ def set_seed(args):
 
 def train():
     parser = ArgumentParser()
-    parser.add_argument("--chatistics_data", type=str, default="data", help="Path to chatistics data")
+    parser.add_argument("--chatistics_data", type=str, default="../../Chatistics/data", help="Path to chatistics data")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
-    parser.add_argument("--model_checkpoint", type=str, default="openai-gpt", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
+    parser.add_argument("--model", type=str, default="openai-gpt", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
     parser.add_argument("--num_candidates", type=int, default=2, help="Number of candidates for training")
     parser.add_argument("--max_history", type=int, default=2, help="Number of previous exchanges to keep in history")
-    parser.add_argument("--max_input_length", type=int, default=300, help="Number of tokens which will be fed into the model (reduce this number if you have memory constraints)")
+    parser.add_argument("--max_input_length", type=int, default=200, help="Number of tokens which will be fed into the model (reduce this number if you have memory constraints)")
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument("--train_batch_size", type=int, default=4, help="Batch size for training")
     parser.add_argument("--valid_batch_size", type=int, default=4, help="Batch size for validation")
@@ -146,11 +146,11 @@ def train():
 
     # Load tokenizer
     logger.info("Prepare tokenizer, pretrained model and optimizer.")
-    tokenizer_class = GPT2Tokenizer if "gpt2" in args.model_checkpoint else OpenAIGPTTokenizer # cant use Autotokenizer because checkpoint could be a Path
-    tokenizer = tokenizer_class.from_pretrained(args.model_checkpoint)
+    tokenizer_class = GPT2Tokenizer if "gpt2" in args.model else OpenAIGPTTokenizer # cant use Autotokenizer because checkpoint could be a Path
+    tokenizer = tokenizer_class.from_pretrained(args.model)
     # Load model
-    model_class = GPT2DoubleHeadsModel if "gpt2" in args.model_checkpoint else OpenAIGPTDoubleHeadsModel
-    model = model_class.from_pretrained(args.model_checkpoint)
+    model_class = GPT2DoubleHeadsModel if "gpt2" in args.model else OpenAIGPTDoubleHeadsModel
+    model = model_class.from_pretrained(args.model)
     model.to(args.device)
     # Add special tokens if they are not already added
     add_special_tokens_(model, tokenizer)
@@ -170,7 +170,9 @@ def train():
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.lr, eps=args.adam_epsilon)
     t_total = len(train_loader) // args.gradient_accumulation_steps * args.n_epochs
-    scheduler = WarmupLinearSchedule(optimizer, warmup_steps=args.warmup_steps, t_total=t_total)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
+    )
 
     # Train!
     logger.info("***** Running training *****")
@@ -178,9 +180,9 @@ def train():
     epochs_trained = 0
     steps_trained_in_current_epoch = 0
     # Check if continuing training from a checkpoint
-    if os.path.exists(args.model_checkpoint):
+    if os.path.exists(args.model):
         # set global_step to gobal_step of last saved checkpoint from model path
-        global_step = int(args.model_checkpoint.split("-")[-1].split("/")[0])
+        global_step = int(args.model.split("-")[-1].split("/")[0])
         epochs_trained = global_step // (len(train_loader) // args.gradient_accumulation_steps)
         steps_trained_in_current_epoch = global_step % (len(train_loader) // args.gradient_accumulation_steps)
         logger.info("Continuing training from checkpoint, will skip to saved global_step")
