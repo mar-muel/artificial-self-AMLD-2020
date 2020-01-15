@@ -25,8 +25,14 @@ def remove_control_characters(s):
     # removes all other control characters and the NULL byte (which causes issues when parsing with pandas)
     return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
 
-def generate_chatistics_conversation_data(chatistics_data_path):
+def get_chatistics_conversation_data(chatistics_data_path, use_cache=True):
     """Create conversation data from chatistics pickles"""
+    if use_cache:
+        if os.path.isfile(CHATISTICS_CONV_DATA):
+            logger.info('Reading cached conversation data...')
+            with open(CHATISTICS_CONV_DATA, 'r') as f:
+                data = json.load(f)
+            return data
     logger.info(f"Creating conversation data from Chatistics chat logs from {chatistics_data_path}")
     # load pickle files into df
     pickles = glob.glob(os.path.join(chatistics_data_path, '*.pkl'))
@@ -66,7 +72,7 @@ def generate_chatistics_conversation_data(chatistics_data_path):
                     current_messages.append(remove_control_characters(row.text))
                 else:
                     # dump previous messsages
-                    prevSenderType = 'speaker2' if row.outgoing else 'speaker1' # if current is outgoing previous was speaker 2
+                    prevSenderType = 'person2' if row.outgoing else 'person1' # if current is outgoing previous was person 2
                     conversation.append({'messages': current_messages, 'sender': prevSender, 'senderType': prevSenderType})
                     # response by other
                     prevSender = row.senderName
@@ -78,20 +84,16 @@ def generate_chatistics_conversation_data(chatistics_data_path):
     logger.info(f'Generated {len(data.keys()):,} conversations with a total of {num_interactions:,} interactions...')
     with open(CHATISTICS_CONV_DATA, 'w') as f:
         json.dump(data, f)
+    return data
 
 
-def generate_input_task1(chatistics_data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
-    """Generate input data for task 1"""
+def generate_input_task2(chatistics_data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
+    """Generate input data for task 2"""
     f_path = os.path.join('data', 'input.txt')
     if os.path.isfile(f_path) and use_cache:
         logger.info('Input data already present.')
         return
-    # Make sure the conversation data is available in json format
-    if not os.path.isfile(CHATISTICS_CONV_DATA) or not use_cache:
-        generate_chatistics_conversation_data(chatistics_data_path)
-    # Read conversation data
-    with open(CHATISTICS_CONV_DATA, 'r') as f:
-        data = json.load(f)
+    data = get_chatistics_conversation_data(chatistics_data_path, use_cache=use_cache)
     output = ''
     num_lines = 0
     for converation_with_name, conversations in data.items():

@@ -2,7 +2,6 @@ import os
 import logging
 from argparse import ArgumentParser
 from collections import defaultdict
-from itertools import chain
 import random
 import numpy as np
 import torch
@@ -18,108 +17,25 @@ from transformers import (
     CONFIG_NAME,
     get_linear_schedule_with_warmup,
 )
-from utils import make_logdir, get_chatistics_dataset
+from utils import make_logdir, get_input_task3, add_special_tokens_, set_seed
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
 
-SPECIAL_TOKENS = ["<bos>", "<eos>", "<speaker1>", "<speaker2>", "<pad>"]
-ATTR_TO_SPECIAL_TOKEN = {'bos_token': '<bos>', 'eos_token': '<eos>', 'pad_token': '<pad>',
-                         'additional_special_tokens': ('<speaker1>', '<speaker2>')}
-MODEL_INPUTS = ["input_ids", "mc_token_ids", "lm_labels", "mc_labels", "token_type_ids"]
-PADDED_INPUTS = ["input_ids", "lm_labels", "token_type_ids"]
 
-def pad_dataset(dataset, padding=0):
-    """ Pad the dataset. This could be optimized by defining a Dataset class and padding at the batch level, but this is simpler. """
-    max_l = max(len(x) for x in dataset["input_ids"])
-    for name in PADDED_INPUTS:
-        dataset[name] = [x + [padding if name != "lm_labels" else -1] * (max_l - len(x)) for x in dataset[name]]
-    return dataset
-
-def add_special_tokens_(model, tokenizer):
-    """ Add special tokens to the tokenizer and the model if they have not already been added. """
-    orig_num_tokens = len(tokenizer.encoder)
-    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN) # doesn't add if they are already there
-    if num_added_tokens > 0:
-        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
-
-def build_input_from_segments(persona, history, reply, tokenizer, lm_labels=False, with_eos=True):
-    """ Build a sequence of input from 3 segments: persona, history and last reply. """
-    bos, eos, speaker1, speaker2 = tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS[:-1])
-    sequence = [[bos] + list(chain(*persona))] + history + [reply + ([eos] if with_eos else [])]
-    sequence = [sequence[0]] + [[speaker2 if (len(sequence)-i) % 2 else speaker1] + s for i, s in enumerate(sequence[1:])]
-    instance = {}
-    instance["input_ids"] = list(chain(*sequence))
-    instance["token_type_ids"] = [speaker2 if i % 2 else speaker1 for i, s in enumerate(sequence) for _ in s]
-    instance["mc_token_ids"] = len(instance["input_ids"]) - 1
-    instance["lm_labels"] = [-1] * len(instance["input_ids"])
-    if lm_labels:
-        instance["lm_labels"] = ([-1] * sum(len(s) for s in sequence[:-1])) + [-1] + sequence[-1][1:]
-    return instance
-
-def get_data_loaders(args, tokenizer):
+def get_data_loader(args, tokenizer, use_cache=True):
     """ Prepare the dataset for training and evaluation """
-    personachat = get_chatistics_dataset(tokenizer, args.chatistics_data)
-    logger.info("Build inputs and labels")
-    datasets = {"train": defaultdict(list), "valid": defaultdict(list)}
-    for dataset_name, dataset in personachat.items():
-        if len(dataset) == 0:
-            continue
-        num_candidates = len(dataset[0]["utterances"][0]["candidates"])
-        if args.num_candidates > 0 and dataset_name == 'train':
-            num_candidates = min(args.num_candidates, num_candidates)
-        for dialog in dataset:
-            persona = ''  # here we could couple the dialog to a personality
-            for utterance in dialog["utterances"]:
-                history = utterance["history"][-(2*args.max_history+1):]
-                instance_list = []
-                for j, candidate in enumerate(utterance["candidates"][-num_candidates:]):
-                    lm_labels = bool(j == num_candidates-1)  # the last candidate is the correct reply
-                    instance = build_input_from_segments(persona, history, candidate, tokenizer, lm_labels)
-                    input_length = len(instance['input_ids'])
-                    if input_length > args.max_input_length:
-                        logger.info(f'Skipping example of length {input_length} (max input length is {args.max_input_length})')
-                        break
-                    instance_list.append(instance)
-                if len(instance_list) == num_candidates:
-                    # only collect examples which were below max_input_length
-                    for instance in instance_list:
-                        for input_name, input_array in instance.items():
-                            datasets[dataset_name][input_name].append(input_array)
-                    datasets[dataset_name]["mc_labels"].append(num_candidates - 1)
-                    datasets[dataset_name]["n_candidates"] = num_candidates
-    # pad dataset
-    logger.info("Pad inputs and convert to Tensor")
-    tensor_datasets = {"train": [], "valid": []}
-    for dataset_name, dataset in datasets.items():
-        if len(dataset) == 0:
-            continue
-        dataset = pad_dataset(dataset, padding=tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS[-1]))
-        model_input_tensors = []
-        for input_name in MODEL_INPUTS:
-            tensor = torch.tensor(dataset[input_name])
-            if input_name != "mc_labels":
-                tensor = tensor.view((-1, datasets[dataset_name]["n_candidates"]) + tensor.shape[1:])
-            model_input_tensors.append(tensor)
-        if len(model_input_tensors) == len(MODEL_INPUTS):
-            tensor_datasets[dataset_name].extend(model_input_tensors)
-    logger.info("Build train and validation dataloaders")
-    train_dataset, valid_dataset = TensorDataset(*tensor_datasets["train"]), TensorDataset(*tensor_datasets["valid"])
+    # get dataset of tensors
+    data = get_input_task3(args, tokenizer, use_cache=use_cache)
+    logger.info("Building training data loader")
+    train_dataset = TensorDataset(*data)
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
-    valid_loader = DataLoader(valid_dataset, batch_size=args.valid_batch_size, shuffle=False)
-    logger.info("Train dataset (Batch, Candidates, Seq length): {}".format(train_dataset.tensors[0].shape))
-    return train_loader, valid_loader
-
-def set_seed(args):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if torch.cuda.device_count() > 0:
-        torch.cuda.manual_seed_all(args.seed)
+    logger.info("Train dataset input shape: (Batch size, Candidates, Seq length): {}".format(train_dataset.tensors[0].shape))
+    return train_loader
 
 def train():
     parser = ArgumentParser()
-    parser.add_argument("--chatistics_data", type=str, default="../../Chatistics/data", help="Path to chatistics data")
+    parser.add_argument("--chatistics_data_path", type=str, default="../../Chatistics/data", help="Path to chatistics data")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
     parser.add_argument("--model", type=str, default="openai-gpt", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
@@ -128,7 +44,6 @@ def train():
     parser.add_argument("--max_input_length", type=int, default=200, help="Number of tokens which will be fed into the model (reduce this number if you have memory constraints)")
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
     parser.add_argument("--train_batch_size", type=int, default=4, help="Batch size for training")
-    parser.add_argument("--valid_batch_size", type=int, default=4, help="Batch size for validation")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8, help="Accumulate gradients on several steps")
     parser.add_argument("--lr", type=float, default=6.25e-5, help="Learning rate")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float, help="Epsilon for Adam optimizer.")
@@ -157,7 +72,7 @@ def train():
 
     # Get data loaders
     logger.info("Prepare datasets")
-    train_loader, valid_loader = get_data_loaders(args, tokenizer)
+    train_loader = get_data_loader(args, tokenizer, use_cache=True)
 
     # Prepare optimizer and schedule (linear warmup and decay)
     no_decay = ["bias", "LayerNorm.weight"]
@@ -193,6 +108,7 @@ def train():
     # Training loop
     model.zero_grad()
     epoch_pbar = trange(epochs_trained, int(args.n_epochs))
+    av_loss = 0
     for current_epoch in epoch_pbar:
         epoch_pbar.set_description(f"Epoch [{current_epoch+1}/{args.n_epochs}]")
         pbar = tqdm(train_loader)
@@ -208,7 +124,9 @@ def train():
             loss = (lm_loss * args.lm_coef + mc_loss * args.mc_coef) / args.gradient_accumulation_steps
             loss.backward()
             tr_loss = loss.item()
-            pbar.set_description(f"Training loss: {tr_loss:.4f}")
+            # caclulate exponential moving average
+            av_loss = (step*av_loss + loss)/(step + 1)
+            pbar.set_description(f"Average loss: {av_loss:.4f}")
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_norm)
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 optimizer.step()

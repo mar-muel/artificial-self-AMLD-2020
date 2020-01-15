@@ -1,3 +1,4 @@
 runs
-cached_chatistics_personachat.pkl
+*.pkl
 chatistics_conversation_data.json
+

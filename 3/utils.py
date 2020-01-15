@@ -13,10 +13,16 @@ import re
 from datetime import datetime, timedelta
 from collections import defaultdict
 from tqdm import tqdm
-from transformers import cached_path
 import random
+import itertools
+import numpy as np
 
 CHATISTICS_CONV_DATA = 'chatistics_conversation_data.json'
+SPECIAL_TOKENS = ["<bos>", "<eos>", "<speaker1>", "<speaker2>", "<pad>"]
+ATTR_TO_SPECIAL_TOKEN = {'bos_token': '<bos>', 'eos_token': '<eos>', 'pad_token': '<pad>',
+                         'additional_special_tokens': ('<speaker1>', '<speaker2>')}
+MODEL_INPUTS = ["input_ids", "mc_token_ids", "lm_labels", "mc_labels", "token_type_ids"]
+PADDED_INPUTS = ["input_ids", "lm_labels", "token_type_ids"]
 logger = logging.getLogger(__file__)
 
 def remove_control_characters(s):
@@ -31,9 +37,28 @@ def remove_control_characters(s):
     # removes all other control characters and the NULL byte (which causes issues when parsing with pandas)
     return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
 
+def add_special_tokens_(model, tokenizer):
+    """ Add special tokens to the tokenizer and the model if they have not already been added. """
+    orig_num_tokens = len(tokenizer.encoder)
+    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN) # doesn't add if they are already there
+    if num_added_tokens > 0:
+        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
 
-def generate_chatistics_conversation_data(chatistics_data_path):
+def set_seed(args):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.device_count() > 0:
+        torch.cuda.manual_seed_all(args.seed)
+
+def get_chatistics_conversation_data(chatistics_data_path, use_cache=True):
     """Create conversation data from chatistics pickles"""
+    if use_cache:
+        if os.path.isfile(CHATISTICS_CONV_DATA):
+            logger.info('Reading cached conversation data...')
+            with open(CHATISTICS_CONV_DATA, 'r') as f:
+                data = json.load(f)
+            return data
     logger.info(f"Creating conversation data from Chatistics chat logs from {chatistics_data_path}")
     # load pickle files into df
     pickles = glob.glob(os.path.join(chatistics_data_path, '*.pkl'))
@@ -85,29 +110,27 @@ def generate_chatistics_conversation_data(chatistics_data_path):
     logger.info(f'Generated {len(data.keys()):,} conversations with a total of {num_interactions:,} interactions...')
     with open(CHATISTICS_CONV_DATA, 'w') as f:
         json.dump(data, f)
+    return data
 
-def get_chatistics_dataset(tokenizer, chatistics_data_path, create_validataion_set=False):
+def get_input_task3(args, tokenizer, use_cache=True):
     """Get tokenized chatlog dataset"""
-    def merge_messages(messages, max_num_words=200):
+    def merge_messages(messages):
         full_message = ''
         for m in messages:
             m = m.strip()
             if len(m) > 0:
                 full_message += '\n' + m
         return full_message.strip()
-
     # check for cached data
-    cached_path = 'cached_chatistics_personachat.pkl'
-    if os.path.isfile(cached_path):
-        logger.info('Reading cached data...')
-        with open(cached_path, 'rb') as f:
-            data = pickle.load(f)
-        return data
-    # read data
-    if not os.path.isfile(CHATISTICS_CONV_DATA):
-        generate_chatistics_conversation_data(chatistics_data_path)
-    with open(CHATISTICS_CONV_DATA, 'r') as f:
-        conv_data = json.load(f)
+    cached_path = f'cached_input_task3_{tokenizer.__module__}_{args.num_candidates}_{args.seed}.pkl'
+    if use_cache:
+        if os.path.isfile(cached_path):
+            logger.info('Reading cached data...')
+            with open(cached_path, 'rb') as f:
+                data = pickle.load(f)
+            return data
+    # read conversation data
+    conv_data = get_chatistics_conversation_data(args.chatistics_data_path, use_cache=use_cache)
     # retrieve_all_interactions by person1 in order to generate distractor messages
     all_interactions_person1 = []
     for _, conversations in conv_data.items():
@@ -121,14 +144,16 @@ def get_chatistics_dataset(tokenizer, chatistics_data_path, create_validataion_s
         raise Exception(f'Person1 needs to have at least 20 interactions')
     # create personachat data structure
     data = []
-    num_utterances = 0
+    num_interactions = 0
+    num_messages = 0
     for conversation_with_name, conversations in conv_data.items():
-        utterances = []
         for conversation in conversations:
             history = []
             for interaction in conversation:
+                num_interactions += 1
+                num_messages += len(interaction['messages'])
                 # we are trying to learn person1.
-                # All interactions have the shape:
+                # Generate the following structure
                 # person2, person1, ..., person2, <candidate> (candidate can be either a distractor or the true answer of person1)
                 if interaction['senderType'] == 'person1':
                     # person 1
@@ -138,28 +163,21 @@ def get_chatistics_dataset(tokenizer, chatistics_data_path, create_validataion_s
                     # Generate candidates for problem
                     candidates = []
                     true_answer = merge_messages(interaction['messages'])
-                    while len(candidates) < 19:
+                    while len(candidates) < args.num_candidates-1:
                         cand = all_interactions_person1[random.randint(0, num_interactions_person1 - 1)]
+                        # make sure random distractor message wasn't accidentially true answer
                         if cand != true_answer:
                             candidates.append(cand)
-                    candidates.append(true_answer) # last candidate is true one
-                    # add new problem
-                    utterances.append({'history': history[-8:], 'candidates': candidates})
-                    num_utterances += 1
+                    candidates.append(true_answer) # last candidate is the true one
+                    # add new problem (keep a maximum of 8 interactions)
+                    data.append({'history': history[-8:], 'candidates': candidates})
                 else:
                     # person 2
                     message = merge_messages(interaction['messages'])
                     history.append(message)
-        data.append({'personality': [conversation_with_name], 'utterances': utterances})
-    logger.info(f'Generated a total of {num_utterances:,} utterances from {len(data):,} conversations...')
-    # split in train/validation
+    logger.info(f'Generated a total of {len(data):,} training examples from {len(conv_data):,} conversations consisting of {num_interactions:,} interactions and {num_messages:,} messages...')
+    # shuffle examples
     random.shuffle(data)
-    if create_validataion_set:
-        split_int = int(len(data)*.8)
-        dataset = {'train': data[:split_int], 'valid': data[split_int:]}
-    else:
-        dataset = {'train': data, 'valid': []}
-
     # tokenizing
     logger.info('Tokenizing...')
     def tokenize(obj):
@@ -169,11 +187,63 @@ def get_chatistics_dataset(tokenizer, chatistics_data_path, create_validataion_s
         if isinstance(obj, dict):
             return dict((n, tokenize(o)) for n, o in obj.items())
         return list(tokenize(o) for o in obj)
-    dataset = tokenize(dataset)
+    data = tokenize(data)
+    # generate training examples
+    logger.info("Build inputs and labels")
+    dataset = defaultdict(list)
+    for interaction in data:
+        history = interaction["history"][-(2*args.max_history+1):]
+        instance_list = []
+        for j, candidate in enumerate(interaction["candidates"]):
+            lm_labels = bool(j == args.num_candidates-1)  # the last candidate is the correct reply
+            instance = build_input_from_segments(history, candidate, tokenizer, lm_labels=lm_labels)
+            input_length = len(instance['input_ids'])
+            if input_length > args.max_input_length:
+                logger.info(f'Skipping example of length {input_length} (max input length is {args.max_input_length})')
+                break
+            instance_list.append(instance)
+        if len(instance_list) == args.num_candidates:
+            # only collect examples which were below max_input_length
+            for instance in instance_list:
+                for input_name, input_array in instance.items():
+                    dataset[input_name].append(input_array)
+            dataset["mc_labels"].append(args.num_candidates - 1)
+            dataset["n_candidates"] = args.num_candidates
+    # pad dataset
+    logger.info("Pad inputs and convert to Tensor")
+    tensor_dataset = []
+    dataset = pad_dataset(dataset, padding=tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS[-1]))
+    for input_name in MODEL_INPUTS:
+        tensor = torch.tensor(dataset[input_name])
+        if input_name != "mc_labels":
+            tensor = tensor.view((-1, dataset["n_candidates"]) + tensor.shape[1:])
+        tensor_dataset.append(tensor)
     logger.info(f'Writing cached file {cached_path}...')
     with open(cached_path, 'wb') as f:
-        pickle.dump(dataset, f)
+        pickle.dump(tensor_dataset, f)
+    return tensor_dataset
+
+def pad_dataset(dataset, padding=0):
+    """ Pad the dataset. This could be optimized by defining a Dataset class and padding at the batch level, but this is simpler. """
+    max_l = max(len(x) for x in dataset["input_ids"])
+    for name in PADDED_INPUTS:
+        dataset[name] = [x + [padding if name != "lm_labels" else -1] * (max_l - len(x)) for x in dataset[name]]
     return dataset
+
+def build_input_from_segments(history, reply, tokenizer, lm_labels=False, with_eos=True):
+    """ Build a sequence of input from 2 segments: history and last reply. """
+    bos, eos, speaker1, speaker2 = tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS[:-1])
+    sequence = [[bos]] + history + [reply + ([eos] if with_eos else [])]
+    sequence = [sequence[0]] + [[speaker2 if (len(sequence)-i) % 2 else speaker1] + s for i, s in enumerate(sequence[1:])]
+    instance = {}
+    instance["input_ids"] = list(itertools.chain(*sequence))
+    instance["token_type_ids"] = [speaker2 if i % 2 else speaker1 for i, s in enumerate(sequence) for _ in s]
+    instance["mc_token_ids"] = len(instance["input_ids"]) - 1
+    instance["lm_labels"] = [-1] * len(instance["input_ids"])
+    if lm_labels:
+        instance["lm_labels"] = ([-1] * sum(len(s) for s in sequence[:-1])) + [-1] + sequence[-1][1:]
+    return instance
+
 
 def make_logdir(model_name: str):
     """Create unique path to save results and checkpoints, e.g. runs/Sep22_19-45-59_gpu-7_gpt2"""

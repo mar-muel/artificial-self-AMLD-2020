@@ -20,7 +20,7 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils import generate_input_task1
+from utils import generate_input_task2
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
@@ -109,7 +109,7 @@ def train():
     add_special_tokens_(model, tokenizer)
 
     # Generate input data
-    generate_input_task1('../../Chatistics/data', speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=False)
+    generate_input_task2('../../Chatistics/data', speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=False)
 
     # Get data loaders
     logger.info("Prepare datasets")
