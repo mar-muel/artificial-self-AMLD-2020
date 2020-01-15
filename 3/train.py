@@ -1,8 +1,6 @@
 import os
 import logging
 from argparse import ArgumentParser
-from collections import defaultdict
-import random
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -13,8 +11,6 @@ from transformers import (
     OpenAIGPTTokenizer,
     GPT2DoubleHeadsModel,
     GPT2Tokenizer,
-    WEIGHTS_NAME,
-    CONFIG_NAME,
     get_linear_schedule_with_warmup,
 )
 from utils import get_input_task3, add_special_tokens_, set_seed

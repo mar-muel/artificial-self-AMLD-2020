@@ -20,21 +20,14 @@ from transformers import (
     PreTrainedTokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils import generate_input_task2
+from utils import get_input_task2, set_seed, add_special_tokens_
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
 
-ATTR_TO_SPECIAL_TOKEN = {'additional_special_tokens': ('<speaker1>', '<speaker2>')}
-
-def read_data(f_name):
-    with open(f_name, encoding="utf-8") as f:
-        text = f.read()
-    return text
-
 class TextDataset(Dataset):
     def __init__(self, tokenizer, args):
-        text = read_data(args.train_data)
+        text = get_input_task2(args)
         logger.info("Tokenizing and building input...")
         tokenized_text = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
         self.examples = []
@@ -45,10 +38,8 @@ class TextDataset(Dataset):
         for i in range(0, len(tokenized_text) - block_size + 1, block_size):  # Truncate in block of block_size
             # Note that we are loosing the last truncated example here for the sake of simplicity (no padding)
             self.examples.append(tokenizer.build_inputs_with_special_tokens(tokenized_text[i : i + block_size]))
-
     def __len__(self):
         return len(self.examples)
-
     def __getitem__(self, item):
         return torch.tensor(self.examples[item])
 
@@ -56,27 +47,13 @@ def get_data_loader(args, tokenizer):
     """ Prepare the dataset for training and evaluation """
     dataset = TextDataset(tokenizer, args)
     logger.info("Train dataset: {:,} samples".format(len(dataset)))
-    logger.info("Build train and validation dataloaders")
+    logger.info("Build dataloaders")
     data_loader = DataLoader(dataset, batch_size=args.train_batch_size, shuffle=True)
     return data_loader
 
-def set_seed(args):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if torch.cuda.device_count() > 0:
-        torch.cuda.manual_seed_all(args.seed)
-
-def add_special_tokens_(model, tokenizer):
-    """ Add special tokens to the tokenizer and the model if they have not already been added. """
-    orig_num_tokens = len(tokenizer.encoder)
-    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN) # doesn't add if they are already there
-    if num_added_tokens > 0:
-        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
-
 def train():
     parser = ArgumentParser()
-    parser.add_argument("--train_data", type=str, default="data/input.txt", help="Path to training data")
+    parser.add_argument("--chatistics_data_path", type=str, default="../../Chatistics/data", help="Path to chatistics data")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
     parser.add_argument("--model_checkpoint", type=str, default="gpt2", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
@@ -107,9 +84,6 @@ def train():
     model.to(args.device)
     # Add special tokens if they are not already added
     add_special_tokens_(model, tokenizer)
-
-    # Generate input data
-    generate_input_task2('../../Chatistics/data', speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=False)
 
     # Get data loaders
     logger.info("Prepare datasets")

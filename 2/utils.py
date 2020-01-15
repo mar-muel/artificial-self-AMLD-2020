@@ -9,8 +9,12 @@ import re
 from datetime import datetime, timedelta
 from collections import defaultdict
 from tqdm import tqdm
+import numpy as np
+import random
+import torch
 
 logger = logging.getLogger(__file__)
+ATTR_TO_SPECIAL_TOKEN = {'additional_special_tokens': ('<speaker1>', '<speaker2>')}
 
 def remove_control_characters(s):
     if not isinstance(s, str):
@@ -85,14 +89,15 @@ def get_chatistics_conversation_data(chatistics_data_path, use_cache=True, cache
         json.dump(data, f)
     return data
 
-
-def generate_input_task2(chatistics_data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
+def get_input_task2(args, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
     """Generate input data for task 2"""
-    f_path = os.path.join('data', 'input.txt')
+    f_path = os.path.join('data', 'input_task2.txt')
     if os.path.isfile(f_path) and use_cache:
         logger.info('Input data already present.')
-        return
-    data = get_chatistics_conversation_data(chatistics_data_path, use_cache=use_cache)
+        with open(f_path, encoding="utf-8") as f:
+            output = f.read()
+        return output
+    data = get_chatistics_conversation_data(args.chatistics_data_path, use_cache=use_cache)
     output = ''
     num_lines = 0
     for converation_with_name, conversations in data.items():
@@ -104,6 +109,22 @@ def generate_input_task2(chatistics_data_path, speaker1_tag='<speaker1>', speake
                 output += '{} {}\n'.format(speaker_tag, ' '.join(interaction['messages']))
                 num_lines += 1
     # write output data
-    logger.info(f'Writing task 1 input data ({num_lines:,} lines) to {f_path}...')
+    logger.info(f'Writing input data ({num_lines:,} lines) to {f_path}...')
     with open(f_path, 'w') as f:
         f.write(output)
+    return output
+
+def set_seed(args):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.device_count() > 0:
+        torch.cuda.manual_seed_all(args.seed)
+
+def add_special_tokens_(model, tokenizer):
+    """ Add special tokens to the tokenizer and the model if they have not already been added. """
+    orig_num_tokens = len(tokenizer.encoder)
+    num_added_tokens = tokenizer.add_special_tokens(ATTR_TO_SPECIAL_TOKEN) # doesn't add if they are already there
+    if num_added_tokens > 0:
+        model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
+
