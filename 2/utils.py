@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from tqdm import tqdm
 
-CHATISTICS_CONV_DATA = 'chatistics_conversation_data.json'
 logger = logging.getLogger(__file__)
 
 def remove_control_characters(s):
@@ -25,12 +24,12 @@ def remove_control_characters(s):
     # removes all other control characters and the NULL byte (which causes issues when parsing with pandas)
     return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
 
-def get_chatistics_conversation_data(chatistics_data_path, use_cache=True):
+def get_chatistics_conversation_data(chatistics_data_path, use_cache=True, cache_path='chatistics_conversation_data.json'):
     """Create conversation data from chatistics pickles"""
     if use_cache:
-        if os.path.isfile(CHATISTICS_CONV_DATA):
+        if os.path.isfile(cache_path):
             logger.info('Reading cached conversation data...')
-            with open(CHATISTICS_CONV_DATA, 'r') as f:
+            with open(cache_path, 'r') as f:
                 data = json.load(f)
             return data
     logger.info(f"Creating conversation data from Chatistics chat logs from {chatistics_data_path}")
@@ -82,7 +81,7 @@ def get_chatistics_conversation_data(chatistics_data_path, use_cache=True):
                 data[conversation_name].append(conversation)
                 num_interactions += len(conversation)
     logger.info(f'Generated {len(data.keys()):,} conversations with a total of {num_interactions:,} interactions...')
-    with open(CHATISTICS_CONV_DATA, 'w') as f:
+    with open(cache_path, 'w') as f:
         json.dump(data, f)
     return data
 

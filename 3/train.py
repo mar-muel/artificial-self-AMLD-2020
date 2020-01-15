@@ -17,7 +17,7 @@ from transformers import (
     CONFIG_NAME,
     get_linear_schedule_with_warmup,
 )
-from utils import make_logdir, get_input_task3, add_special_tokens_, set_seed
+from utils import get_input_task3, add_special_tokens_, set_seed
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
