@@ -76,11 +76,11 @@ def train():
 
     # Load tokenizer
     logger.info("Prepare tokenizer, pretrained model and optimizer.")
-    tokenizer_class = GPT2Tokenizer if "gpt2" in args.model_checkpoint else OpenAIGPTTokenizer # cant use Autotokenizer because checkpoint could be a Path
-    tokenizer = tokenizer_class.from_pretrained(args.model_checkpoint)
+    tokenizer_class = GPT2Tokenizer if "gpt2" in args.model else OpenAIGPTTokenizer # cant use Autotokenizer because checkpoint could be a Path
+    tokenizer = tokenizer_class.from_pretrained(args.model)
     # Load model
-    model_class = GPT2LMHeadModel if "gpt2" in args.model_checkpoint else OpenAIGPTLMHeadModel
-    model = model_class.from_pretrained(args.model_checkpoint)
+    model_class = GPT2LMHeadModel if "gpt2" in args.model else OpenAIGPTLMHeadModel
+    model = model_class.from_pretrained(args.model)
     model.to(args.device)
     # Add special tokens if they are not already added
     add_special_tokens_(model, tokenizer)
@@ -111,9 +111,9 @@ def train():
     epochs_trained = 0
     steps_trained_in_current_epoch = 0
     # Check if continuing training from a checkpoint
-    if os.path.exists(args.model_checkpoint):
+    if os.path.exists(args.model):
         # set global_step to gobal_step of last saved checkpoint from model path
-        global_step = int(args.model_checkpoint.split("-")[-1].split("/")[0])
+        global_step = int(args.model.split("-")[-1].split("/")[0])
         epochs_trained = global_step // (len(data_loader) // args.gradient_accumulation_steps)
         steps_trained_in_current_epoch = global_step % (len(data_loader) // args.gradient_accumulation_steps)
         logger.info("Continuing training from checkpoint, will skip to saved global_step")
