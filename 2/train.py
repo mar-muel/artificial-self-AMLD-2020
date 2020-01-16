@@ -55,7 +55,7 @@ def train():
     parser = ArgumentParser()
     parser.add_argument("--data_path", default=None, help="Path to conversational data")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
-    parser.add_argument("--model_checkpoint", type=str, default="gpt2", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
+    parser.add_argument("--model", type=str, default="openai-gpt", choices=['openai-gpt', 'gpt2'] help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
     parser.add_argument("--max_input_length", type=int, default=400, help="Number of tokens which will be fed into the model (reduce this number if you have memory constraints)")
     parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay if we apply some.")
