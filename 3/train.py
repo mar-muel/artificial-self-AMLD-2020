@@ -31,7 +31,7 @@ def get_data_loader(args, tokenizer, use_cache=True):
 
 def train():
     parser = ArgumentParser()
-    parser.add_argument("--chatistics_data_path", type=str, default="../../Chatistics/data", help="Path to chatistics data")
+    parser.add_argument("--data_path", type=str, default=None, help="Path to conversational data (by default will look for single file in ./data)")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
     parser.add_argument("--model", type=str, default="openai-gpt", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
