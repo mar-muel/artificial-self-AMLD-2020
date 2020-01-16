@@ -53,7 +53,7 @@ def get_data_loader(args, tokenizer):
 
 def train():
     parser = ArgumentParser()
-    parser.add_argument("--chatistics_data_path", type=str, default="../../Chatistics/data", help="Path to chatistics data")
+    parser.add_argument("--data_path", default=None, help="Path to conversational data")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
     parser.add_argument("--model_checkpoint", type=str, default="gpt2", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
     parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
@@ -124,6 +124,7 @@ def train():
     # Training loop
     model.zero_grad()
     epoch_pbar = trange(epochs_trained, int(args.n_epochs))
+    av_loss = 0
     for current_epoch in epoch_pbar:
         epoch_pbar.set_description(f"Epoch [{current_epoch+1}/{args.n_epochs}]")
         pbar = tqdm(data_loader)
@@ -139,7 +140,8 @@ def train():
             loss, *_ = model(inputs, labels=labels)
             loss.backward()
             tr_loss = loss.item()
-            pbar.set_description(f"Training loss: {tr_loss:.4f}")
+            av_loss = (step*av_loss + tr_loss)/(step + 1)
+            pbar.set_description(f"Average loss: {av_loss:.4f}")
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_norm)
             if (step + 1) % args.gradient_accumulation_steps == 0:
                 optimizer.step()
