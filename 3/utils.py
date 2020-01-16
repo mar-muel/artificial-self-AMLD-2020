@@ -13,6 +13,9 @@ from tqdm import tqdm
 import random
 import itertools
 import numpy as np
+from transformers import cached_path
+import tempfile
+import tarfile
 
 # Special tokens to be added to tokenizer:
 # - <bos> to indicate the start of the sequence
@@ -26,6 +29,16 @@ ATTR_TO_SPECIAL_TOKEN = {'bos_token': '<bos>', 'eos_token': '<eos>', 'pad_token'
 MODEL_INPUTS = ["input_ids", "mc_token_ids", "lm_labels", "mc_labels", "token_type_ids"]
 PADDED_INPUTS = ["input_ids", "lm_labels", "token_type_ids"]
 logger = logging.getLogger(__file__)
+HF_FINETUNED_MODEL = "https://s3.amazonaws.com/models.huggingface.co/transfer-learning-chatbot/gpt_personachat_cache.tar.gz"
+
+def download_pretrained_model():
+    """Download and extract finetuned model (trained on Personachat dataset)"""
+    resolved_archive_file = cached_path(HF_FINETUNED_MODEL)
+    tempdir = tempfile.mkdtemp()
+    logger.info("extracting archive file {} to temp dir {}".format(resolved_archive_file, tempdir))
+    with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+        archive.extractall(tempdir)
+    return tempdir
 
 def remove_control_characters(s):
     if not isinstance(s, str):

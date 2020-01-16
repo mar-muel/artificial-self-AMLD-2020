@@ -13,7 +13,7 @@ from transformers import (
     GPT2Tokenizer,
     get_linear_schedule_with_warmup,
 )
-from utils import get_input_task3, add_special_tokens_, set_seed
+from utils import get_input_task3, add_special_tokens_, set_seed, download_pretrained_model
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s] [%(name)-12.12s]: %(message)s')
@@ -50,10 +50,15 @@ def train():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device (cuda or cpu)")
     parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
+    parser.add_argument("--use_pretrained", action='store_true', help="Start training from pre-trained model by Huggingface")
     args = parser.parse_args()
 
     # Set seed
     set_seed(args)
+
+    if args.use_pretrained:
+        args.model = download_pretrained_model()
+        logger.info(f'Using pre-trained Personachat model {args.model}')
 
     # Load tokenizer
     logger.info("Prepare tokenizer, pretrained model and optimizer.")
@@ -93,7 +98,10 @@ def train():
     # Check if continuing training from a checkpoint
     if os.path.exists(args.model):
         # set global_step to gobal_step of last saved checkpoint from model path
-        global_step = int(args.model.split("-")[-1].split("/")[0])
+        try:
+            global_step = int(args.model.split("-")[-1].split("/")[0])
+        except:
+            global_step = 0
         epochs_trained = global_step // (len(train_loader) // args.gradient_accumulation_steps)
         steps_trained_in_current_epoch = global_step % (len(train_loader) // args.gradient_accumulation_steps)
         logger.info("Continuing training from checkpoint, will skip to saved global_step")
