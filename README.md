@@ -2,3 +2,5 @@
 Welcome! You will find all the relevant information about the workshop here!
 
 Let's get started! :rocket: :rocket:
+
+:construction: Repo under heavy construction (come back later!) :construction:
