@@ -41,18 +41,11 @@ def read_conversation_data(data_path):
         f_path = data_path
     else:
         raise FileNotFoundError(f'Input data {data_path} could not be found')
-    df = pd.read_json(f_path)
+    df = pd.read_json(f_path, encoding='utf-8')
     return df
 
-def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
+def generate_input_task2(data_path, cache_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>'):
     """Generate input data for task 2"""
-    # Check for cached file
-    cache_path = os.path.join('cached_input_data_taks2.txt')
-    if os.path.isfile(cache_path) and use_cache:
-        logger.info(f'Reading cached input file from {cache_path}...')
-        with open(cache_path, 'r') as f:
-            output = f.read()
-        return output
     # read conversation data
     df = read_conversation_data(data_path)
     # group messages by sender and generate output text file
@@ -89,6 +82,14 @@ def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker
     logger.info(f'Writing input file with {num_interactions:,} interactions to {cache_path}...')
     with open(cache_path, 'w') as f:
         f.write(output)
+
+def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True, cache_path='cached_input_data_taks2.txt'):
+    """Load input data for task 2"""
+    if not os.path.isfile(cache_path) or not use_cache:
+        generate_input_task2(data_path, cache_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>')
+    logger.info(f'Reading cached input file from {cache_path}...')
+    with open(cache_path, 'r') as f:
+        output = f.read()
     return output
 
 def set_seed(seed):
