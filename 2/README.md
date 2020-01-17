@@ -33,7 +33,7 @@ python export.py -f json <your filter options>
 ```
 4. Place this JSON file now into the folder `2/data/`.
 
-## Alternative data
+### Alternative data
 <Coming soon>
 
 ## Usage
