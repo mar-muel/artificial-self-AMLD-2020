@@ -11,6 +11,7 @@ import torch
 
 logger = logging.getLogger(__file__)
 ATTR_TO_SPECIAL_TOKEN = {'additional_special_tokens': ('<speaker1>', '<speaker2>')}
+CACHE_PATH = 'cached_input_task2.txt'
 
 def remove_control_characters(s):
     if not isinstance(s, str):
@@ -44,7 +45,7 @@ def read_conversation_data(data_path):
     df = pd.read_json(f_path, encoding='utf-8')
     return df
 
-def generate_input_task2(data_path, cache_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>'):
+def generate_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>'):
     """Generate input data for task 2"""
     # read conversation data
     df = read_conversation_data(data_path)
@@ -79,16 +80,16 @@ def generate_input_task2(data_path, cache_path, speaker1_tag='<speaker1>', speak
                 output += '{} {}\n'.format(prev_sender_tag, ' '.join(current_messages))
                 num_interactions += 1
     # write output data
-    logger.info(f'Writing input file with {num_interactions:,} interactions to {cache_path}...')
-    with open(cache_path, 'w') as f:
+    logger.info(f'Writing input file with {num_interactions:,} interactions to {CACHE_PATH}...')
+    with open(CACHE_PATH, 'w') as f:
         f.write(output)
 
-def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True, cache_path='cached_input_data_taks2.txt'):
+def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
     """Load input data for task 2"""
-    if not os.path.isfile(cache_path) or not use_cache:
-        generate_input_task2(data_path, cache_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>')
-    logger.info(f'Reading cached input file from {cache_path}...')
-    with open(cache_path, 'r') as f:
+    if not os.path.isfile(CACHE_PATH) or not use_cache:
+        generate_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>')
+    logger.info(f'Reading cached input file from {CACHE_PATH}...')
+    with open(CACHE_PATH, 'r') as f:
         output = f.read()
     return output
 
