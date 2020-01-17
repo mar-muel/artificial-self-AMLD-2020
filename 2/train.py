@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s]
 
 class TextDataset(Dataset):
     def __init__(self, tokenizer, args):
-        text = get_input_task2(args)
+        text = get_input_task2(args.data_path)
         logger.info("Tokenizing and building input...")
         tokenized_text = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
         self.examples = []
@@ -72,7 +72,7 @@ def train():
     args = parser.parse_args()
 
     # Set seed
-    set_seed(args)
+    set_seed(args.seed)
 
     # Load tokenizer
     logger.info("Prepare tokenizer, pretrained model and optimizer.")

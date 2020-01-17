@@ -25,10 +25,10 @@ def remove_control_characters(s):
     return "".join(ch for ch in s if unicodedata.category(ch)[0]!="C")
 
 
-def read_conversation_data(args):
+def read_conversation_data(data_path):
     """Read conversational data from either Chatistics or other data sources (in JSON) and returns Dataframe"""
     f_path = None
-    if args.data_path is None:
+    if data_path is None:
         # infer file name
         data_folder = 'data'
         input_files = glob.glob(os.path.join(data_folder, '*.json'))
@@ -37,14 +37,14 @@ def read_conversation_data(args):
         elif len(input_files) > 1:
             raise Exception(f'Multiple files found in {data_folder}. Specify file with chatistics_data_path argument.')
         f_path = input_files[0]
-    elif args.data_path is not None and os.path.isfile(args.data_path):
-        f_path = args.data_path
+    elif data_path is not None and os.path.isfile(data_path):
+        f_path = data_path
     else:
-        raise FileNotFoundError(f'Input data {args.data_path} could not be found')
+        raise FileNotFoundError(f'Input data {data_path} could not be found')
     df = pd.read_json(f_path)
     return df
 
-def get_input_task2(args, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
+def get_input_task2(data_path, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', use_cache=True):
     """Generate input data for task 2"""
     # Check for cached file
     cache_path = os.path.join('cached_input_data_taks2.txt')
@@ -54,7 +54,7 @@ def get_input_task2(args, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', 
             output = f.read()
         return output
     # read conversation data
-    df = read_conversation_data(args)
+    df = read_conversation_data(data_path)
     # group messages by sender and generate output text file
     min_num_interactions_per_conversation = 10
     num_interactions = 0
@@ -91,12 +91,12 @@ def get_input_task2(args, speaker1_tag='<speaker1>', speaker2_tag='<speaker2>', 
         f.write(output)
     return output
 
-def set_seed(args):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     if torch.cuda.device_count() > 0:
-        torch.cuda.manual_seed_all(args.seed)
+        torch.cuda.manual_seed_all(seed)
 
 def add_special_tokens_(model, tokenizer):
     """ Add special tokens to the tokenizer and the model if they have not already been added. """
