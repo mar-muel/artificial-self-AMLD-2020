@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional as F
 from transformers import OpenAIGPTLMHeadModel, OpenAIGPTTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from utils import SPECIAL_TOKENS, build_input_from_segments, add_special_tokens_, set_seed
+import asyncio
 
 
 SLACK_API_TOKEN = os.environ["SLACK_API_TOKEN"]
@@ -57,7 +58,6 @@ def top_filtering(logits, top_k=0., top_p=0.9, threshold=-float('Inf'), filter_v
 
     return logits
 
-
 def sample_sequence(history, tokenizer, model, args, current_output=None):
     special_tokens_ids = tokenizer.convert_tokens_to_ids(SPECIAL_TOKENS)
     if current_output is None:
@@ -84,9 +84,6 @@ def sample_sequence(history, tokenizer, model, args, current_output=None):
         current_output.append(prev.item())
     return current_output
 
-
-
-
 def main():
     def get_item(data, item):
         if item in data:
@@ -99,14 +96,16 @@ def main():
         return message
 
     @RTMClient.run_on(event="message")
-    def slack_interact(**payload):
+    async def slack_interact(**payload):
         data = payload['data']
         user = get_item(data, 'user')
 
-        if user == 'UQRUJN1K3':
+        if user == SLACK_USER:
             print(f'Receiving new payload by user {user}')
             print(payload)
             print(history)
+
+
             web_client = payload['web_client']
             message = get_item(data, 'text')
             if message is None:
@@ -120,13 +119,13 @@ def main():
 
             # respond
             channel_id = data['channel']
-            web_client.chat_postMessage(channel=channel_id, text=out_text)   
+            await web_client.chat_postMessage(channel=channel_id, text=out_text)   
         else:
             return
 
     parser = ArgumentParser()
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
-    parser.add_argument("--model", type=str, default="openai-gpt", help="Model type (openai-gpt or gpt2)", choices=['openai-gpt', 'gpt2'])  # anything besides gpt2 will load openai-gpt
+    parser.add_argument("--model", type=str, default="openai-gpt", help="Model type (openai-gpt or gpt2)", choices=['openai-gpt', 'gpt2'])
     parser.add_argument("--max_history", type=int, default=2, help="Number of previous utterances to keep in history")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device (cuda or cpu)")
     parser.add_argument("--no_sample", action='store_true', help="Set to use greedy decoding instead of sampling")
@@ -150,8 +149,9 @@ def main():
     history = []
 
     # start RTM API
-    rtm_client = RTMClient(token=SLACK_API_TOKEN)
-    rtm_client.start()
+    loop = asyncio.get_event_loop()
+    rtm_client = RTMClient(token=SLACK_API_TOKEN, run_async=True, loop=loop)
+    loop.run_until_complete(rtm_client.start())
 
 
 if __name__ == "__main__":
