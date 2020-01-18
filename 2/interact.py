@@ -95,14 +95,12 @@ def run():
     speaker1_tag_id = tokenizer.convert_tokens_to_ids(speaker1_tag)
     speaker2_tag_id = tokenizer.convert_tokens_to_ids(speaker2_tag)
     history = f"""
-{speaker2_tag} hi
-{speaker1_tag} hey
-{speaker2_tag} i'm a human
-{speaker1_tag} i'm you!
-{speaker2_tag} you ready?
-{speaker1_tag} yes :)
-{speaker2_tag} ok let's start chatting
-{speaker1_tag} sure, what do you want to talk about?"""
+{speaker2_tag} Hi!
+{speaker1_tag} Hello
+{speaker2_tag} Are you ready?
+{speaker1_tag} Yes!
+{speaker2_tag} Ok let's start chatting
+{speaker1_tag} Sure, what do you want to talk about?"""
     print(history)
     print('\n[Chat with the model! Send "h" to see the full history]\n')
     history = history.split('\n')
