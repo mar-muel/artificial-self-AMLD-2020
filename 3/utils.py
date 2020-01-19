@@ -102,7 +102,7 @@ def get_grouped_conversation_data(data_path, use_cache=True, cache_path='grouped
     data = defaultdict(list)
     min_num_interactions_per_conversation = 10
     num_interactions = 0
-    for conversation_name, g in tqdm(df.groupby('conversationWithName'), total=len(df['conversationWithName'].unique())):
+    for conversation_name, g in tqdm(df.groupby('conversationWithName'), total=len(df['conversationWithName'].unique()), position=0):
         # only consider conversations between 2 people
         if len(g['senderName'].unique()) == 2 and len(g) > 10:
             time_last_message = datetime(1970, 1, 1)
