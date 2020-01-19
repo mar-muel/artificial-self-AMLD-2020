@@ -67,26 +67,26 @@ def set_seed(args):
     if torch.cuda.device_count() > 0:
         torch.cuda.manual_seed_all(args.seed)
 
-def read_conversation_data(args):
+def read_conversation_data(data_path):
     """Read conversational data from either Chatistics or other data sources (in JSON) and returns Dataframe"""
     f_path = None
-    if args.data_path is None:
+    if data_path is None:
         # infer file name
         data_folder = 'data'
         input_files = glob.glob(os.path.join(data_folder, '*.json'))
         if len(input_files) == 0:
             raise Exception(f'No files found in {data_folder}')
         elif len(input_files) > 1:
-            raise Exception(f'Multiple files found in {data_folder}. Specify file with data_path argument.')
+            raise Exception(f'Multiple files found in {data_folder}. Specify file with chatistics_data_path argument.')
         f_path = input_files[0]
-    elif args.data_path is not None and os.path.isfile(args.data_path):
-        f_path = args.data_path
+    elif data_path is not None and os.path.isfile(data_path):
+        f_path = data_path
     else:
-        raise FileNotFoundError(f'Input data {args.data_path} could not be found')
-    df = pd.read_json(f_path)
+        raise FileNotFoundError(f'Input data {data_path} could not be found')
+    df = pd.read_json(f_path, encoding='utf-8')
     return df
 
-def get_grouped_conversation_data(args, use_cache=True, cache_path='grouped_conversation_data.json'):
+def get_grouped_conversation_data(data_path, use_cache=True, cache_path='grouped_conversation_data.json'):
     """Create grouped conversation data from input data"""
     if use_cache:
         if os.path.isfile(cache_path):
@@ -96,7 +96,7 @@ def get_grouped_conversation_data(args, use_cache=True, cache_path='grouped_conv
             return data
     logger.info(f"Creating grouped conversation data...")
     # read conversational data
-    df = read_conversation_data(args)
+    df = read_conversation_data(data_path)
     # generate conversations
     new_conversation_delay_hours = 24
     data = defaultdict(list)
@@ -170,7 +170,7 @@ def get_input_task3(args, tokenizer, use_cache=True):
                 data = pickle.load(f)
             return data
     # read conversation data
-    conv_data = get_grouped_conversation_data(args, use_cache=use_cache)
+    conv_data = get_grouped_conversation_data(args.data_path, use_cache=use_cache)
     # Generate distractor messages (consisting of of all interactions by person1)
     distractors = generate_distractor_messages()
     num_distractors = len(distractors)
