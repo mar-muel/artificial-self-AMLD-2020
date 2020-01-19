@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)-5.5s]
 def get_data_loader(args, tokenizer, use_cache=True):
     """ Prepare the dataset for training and evaluation """
     # get dataset of tensors
-    data = get_input_task3(args, tokenizer, use_cache=use_cache)
+    data = get_input_task3(args.data_path, tokenizer, max_input_length=args.max_input_length, num_candidates=args.num_candidates, seed=args.seed, max_history=args.max_history, use_cache=use_cache)
     logger.info("Building training data loader")
     train_dataset = TensorDataset(*data)
     train_loader = DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=True)
@@ -54,7 +54,7 @@ def train():
     args = parser.parse_args()
 
     # Set seed
-    set_seed(args)
+    set_seed(args.seed)
 
     if args.use_pretrained:
         args.model = download_pretrained_model()

@@ -59,13 +59,13 @@ def add_special_tokens_(model, tokenizer):
     if num_added_tokens > 0:
         model.resize_token_embeddings(new_num_tokens=orig_num_tokens + num_added_tokens)
 
-def set_seed(args):
+def set_seed(seed):
     """Set seed in random, numpy and torch/cuda"""
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     if torch.cuda.device_count() > 0:
-        torch.cuda.manual_seed_all(args.seed)
+        torch.cuda.manual_seed_all(seed)
 
 def read_conversation_data(data_path):
     """Read conversational data from either Chatistics or other data sources (in JSON) and returns Dataframe"""
@@ -141,7 +141,7 @@ def get_grouped_conversation_data(data_path, use_cache=True, cache_path='grouped
         json.dump(data, f)
     return data
 
-def get_input_task3(args, tokenizer, use_cache=True):
+def get_input_task3(data_path, tokenizer, max_input_length=200, num_candidates=2, seed=42, max_history=2, use_cache=True):
     """Get input data for task 3"""
     def merge_messages(messages):
         """Merge multiple messages into single string"""
@@ -162,7 +162,7 @@ def get_input_task3(args, tokenizer, use_cache=True):
                         distractors.append(message)
         return distractors
     # check for cached data
-    cached_path = f'cached_input_task3_{tokenizer.__module__}_{args.num_candidates}_{args.seed}.pkl'
+    cached_path = f'cached_input_task3_{tokenizer.__module__}_{num_candidates}_{seed}.pkl'
     if use_cache:
         if os.path.isfile(cached_path):
             logger.info('Reading cached data...')
@@ -170,7 +170,7 @@ def get_input_task3(args, tokenizer, use_cache=True):
                 data = pickle.load(f)
             return data
     # read conversation data
-    conv_data = get_grouped_conversation_data(args.data_path, use_cache=use_cache)
+    conv_data = get_grouped_conversation_data(data_path, use_cache=use_cache)
     # Generate distractor messages (consisting of of all interactions by person1)
     distractors = generate_distractor_messages()
     num_distractors = len(distractors)
@@ -196,23 +196,23 @@ def get_input_task3(args, tokenizer, use_cache=True):
                     # Generate candidates for problem
                     candidates = []
                     true_answer = merge_messages(interaction['messages'])
-                    while len(candidates) < args.num_candidates-1:
+                    while len(candidates) < num_candidates-1:
                         cand = distractors[random.randint(0, num_distractors - 1)]
                         # make sure random distractor message wasn't accidentially true answer
                         if cand != true_answer:
                             candidates.append(cand)
                     candidates.append(true_answer) # last candidate is the true one
                     # generating new training example
-                    history_tk = [tokenizer.encode(h) for h in history[-(2*args.max_history+1):]]
+                    history_tk = [tokenizer.encode(h) for h in history[-(2*max_history+1):]]
                     candidates_tk = [tokenizer.encode(c) for c in candidates]
                     instance_list = []
                     for j, candidate in enumerate(candidates_tk):
-                        lm_labels = bool(j == args.num_candidates-1)  # the last candidate is the correct reply
+                        lm_labels = bool(j == num_candidates-1)  # the last candidate is the correct reply
                         # build training example (num_candidates x input_length)
                         instance = build_input_from_segments(history_tk, candidate, tokenizer, lm_labels=lm_labels)
                         input_length = len(instance['input_ids'])
-                        if input_length > args.max_input_length:
-                            # logger.info(f'Skipping example of length {input_length} (max input length is {args.max_input_length})')
+                        if input_length > max_input_length:
+                            # logger.info(f'Skipping example of length {input_length} (max input length is {max_input_length})')
                             break
                         instance_list.append(instance)
                     else:
@@ -220,8 +220,8 @@ def get_input_task3(args, tokenizer, use_cache=True):
                         for instance in instance_list:
                             for input_name, input_array in instance.items():
                                 dataset[input_name].append(input_array)
-                        dataset["mc_labels"].append(args.num_candidates - 1)  # index of true_answer
-                        dataset["n_candidates"] = args.num_candidates
+                        dataset["mc_labels"].append(num_candidates - 1)  # index of true_answer
+                        dataset["n_candidates"] = num_candidates
                         num_examples += 1
                 else:
                     # person 2
