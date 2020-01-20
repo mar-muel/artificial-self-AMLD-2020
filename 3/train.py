@@ -50,13 +50,13 @@ def train():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device (cuda or cpu)")
     parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
-    parser.add_argument("--use_pretrained", action='store_true', help="Start training from pre-trained model by Huggingface")
+    parser.add_argument("--use_huggingface_model", action='store_true', help="Start training from pre-trained model by Huggingface")
     args = parser.parse_args()
 
     # Set seed
     set_seed(args.seed)
 
-    if args.use_pretrained:
+    if args.use_huggingface_model:
         args.model = download_pretrained_model()
         logger.info(f'Using pre-trained Personachat model {args.model}')
 
