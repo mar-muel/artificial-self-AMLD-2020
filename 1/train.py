@@ -23,7 +23,7 @@ def fine_tune(args, model_name='124M'):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Finetune GPT2 on chatlogs parsed with Chatistics"
+        description="Finetune GPT2 on various text data sets"
     )
     parser.add_argument('-d', '--data_path', required=True, help="Path to input data (txt file)")
     parser.add_argument('-r', '--run_name', help="Run name", default='run1')
