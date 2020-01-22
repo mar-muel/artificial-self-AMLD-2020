@@ -60,4 +60,4 @@ python interact.py --run_name run1
 ```
 
 ### Colab notebook
-<Coming soon>
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1iHcQ8_K0cfRE3v8QX6FMKAzdSSGtf5IX)
