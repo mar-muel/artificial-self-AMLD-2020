@@ -1,5 +1,5 @@
 # Meet your Artificial Self: Generate text that sounds like you
-Welcome! You will find all resources, datasets and code for the workshop here!
+Welcome! You will find all resources, datasets, and code for the workshop here!
 
 :construction: Repo still under some construction (but we're getting there ;) :construction:
 
