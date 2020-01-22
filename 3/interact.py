@@ -95,7 +95,7 @@ def run():
     args = parser.parse_args()
 
     # set seed
-    set_seed(args)
+    set_seed(args.seed)
 
     logger.info("Get pretrained model and tokenizer")
     model_path = os.path.join('runs', args.run_name)
