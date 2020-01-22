@@ -2,6 +2,9 @@
 
 Various datasets for the workshop.
 
+## Usage
+We provide a script to parse these data sources into a suitable format. Follow the instructions [here](https://github.com/mar-muel/artificial-self-AMLD-2020/tree/master/1#sample-data).
+
 Interviews
 ---
 
