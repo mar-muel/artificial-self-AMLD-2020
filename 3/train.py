@@ -34,7 +34,7 @@ def train():
     parser.add_argument("--data_path", type=str, default=None, help="Path to conversational data (by default will look for single file in ./data)")
     parser.add_argument("--run_name", type=str, default='run1', help="The name of the run (subdirectory in ./runs)")
     parser.add_argument("--model", type=str, default="openai-gpt", help="Initialize model from path to checkpoint or with model name (openai-gpt/openai-gpt2)")
-    parser.add_argument("--save_every", type=int, default=50, help="Save checkpoint every n updates steps.")
+    parser.add_argument("--save_every", type=int, default=100, help="Save checkpoint every n updates steps.")
     parser.add_argument("--num_candidates", type=int, default=2, help="Number of candidates for training")
     parser.add_argument("--max_history", type=int, default=2, help="Number of previous exchanges to keep in history")
     parser.add_argument("--max_input_length", type=int, default=200, help="Number of tokens which will be fed into the model (reduce this number if you have memory constraints)")
