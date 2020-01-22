@@ -11,19 +11,23 @@ In this workshop, participants are tasked to download their own chat logs and bu
 The workshop is split in 3 tasks. You can run each task locally (by cloning this repository) or by running the Colab notebook (see links below). If you run locally, make sure you have access to GPU(s) and you are running Python 3.6+ (also make sure you have sufficient storage space). More detailed instructions are provided in the different subfolders.
 
 ## Task 1
-Fine-tune GPT-2 on various [datasets](datasets) (including tweets, poetry, programming code, chess, music and more!). Thanks to [@manueth](https://github.com/manueth) for compiling the datasets! [Read more here](1).
+Fine-tune GPT-2 on various [datasets](datasets) (including tweets, poetry, programming code, chess, music and more!). Thanks to [@manueth](https://github.com/manueth) for compiling the datasets! 
+
+:arrow_right: [Read more](1) 
 
 [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1lk9iZnD5mkAf29FCN3QmcSssFDrWjE8W)
 
 ## Task 2
-We use the same approach of style transfer to train a conversational model from our chat logs. You can either use [Chatistics](https://github.com/MasterScrat/Chatistics) to parse your own chat logs or you can use some of the provided resources. Thanks to [@MasterScrat](https://github.com/MasterScrat) for compiling the conversational datasets! [Read more here](2).
+We use the same approach of style transfer to train a conversational model from our chat logs. You can either use [Chatistics](https://github.com/MasterScrat/Chatistics) to parse your own chat logs or you can use some of the provided resources. Thanks to [@MasterScrat](https://github.com/MasterScrat) for compiling the conversational datasets!
+
+:arrow_right: [Read more](2) 
 
 [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1iHcQ8_K0cfRE3v8QX6FMKAzdSSGtf5IX)
 
 ## Task 3
-We extend the approach in task 2 by introducing multi-task learning, improving data preprocessing, and adding token types. [Read more here](3).
+We extend the approach in task 2 by introducing multi-task learning, improving data preprocessing, and adding token types.
 
-
+:arrow_right: [Read more](3) 
 
 [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XYNef9zcHhTjt6kM6ydL9oXTshoRknIV)
 
