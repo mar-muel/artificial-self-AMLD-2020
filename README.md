@@ -11,7 +11,7 @@ In this workshop, participants are tasked to download their own chat logs and bu
 The workshop is split in 3 tasks. You can run each task locally (by cloning this repository) or by running the Colab notebook (see links below). If you run locally, make sure you have access to GPU(s) and you are running Python 3.6+ (also make sure you have sufficient storage space). More detailed instructions are provided in the different subfolders.
 
 ## Task 1
-Fine-tune GPT-2 on various datasets (including tweets, poetry, programming code, chess, music and more!). Check them out [here](datasets)! Thanks to [@manueth](https://github.com/manueth) for compiling the datasets! [Read more here](1).
+Fine-tune GPT-2 on various [datasets](datasets) (including tweets, poetry, programming code, chess, music and more!). Thanks to [@manueth](https://github.com/manueth) for compiling the datasets! [Read more here](1).
 
 [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1lk9iZnD5mkAf29FCN3QmcSssFDrWjE8W)
 
