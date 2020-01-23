@@ -1,6 +1,6 @@
 # Resources
 
-During our endeavour we found many very interesting blog posts and resources which might help you out:
+During our endeavour in preparing for this workshop we found many very interesting blog posts and resources which might help you out:
 
 
 ## Blog posts
