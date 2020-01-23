@@ -32,6 +32,7 @@ We extend the approach in task 2 by introducing multi-task learning, improving d
 [![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XYNef9zcHhTjt6kM6ydL9oXTshoRknIV)
 
 # Credits
+* [@manueth](https://github.com/manueth) and [@MasterScrat](https://github.com/MasterScrat)
 * [minimaxir/gpt-2-simple](https://github.com/minimaxir/gpt-2-simple)
 * [hunggingface/transformers](https://github.com/huggingface/transformers)
 * [huggingface/transfer-learning-conv-ai](https://github.com/huggingface/transfer-learning-conv-ai)
