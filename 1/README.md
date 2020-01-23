@@ -43,4 +43,5 @@ python generate.py --run_name run1
 Run `python generate.py --help` to see parameters available to influence the text generation.
 
 ### Colab notebook
-[Task 1 Notebook](https://colab.research.google.com/drive/1lk9iZnD5mkAf29FCN3QmcSssFDrWjE8W)
+
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1lk9iZnD5mkAf29FCN3QmcSssFDrWjE8W)
