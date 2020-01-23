@@ -11,9 +11,9 @@ As you will (hopefully) see this greatly improves the model.
 # Usage
 Again you can use the local version or the Colab for this task.
 
-## Local
+## Locally
 1. If you haven't already, clone the repository
-2. Install the dependencies for this task by running
+2. Make sure you have PyTorch with GPU-support installed. Follow the instructions [here](https://pytorch.org/get-started/locally/) here to install the proper version depending on your OS. Also make sure you are using Python 3.6+. Then run:
 ```
 pip install -r 3/requirements.txt
 ```
@@ -22,7 +22,7 @@ pip install -r 3/requirements.txt
 5. Use `python interact.py --run_name run1` to interact
 
 ## Colab
-<Coming soon>
+[![](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XYNef9zcHhTjt6kM6ydL9oXTshoRknIV)
   
 ## Slack integration
 If you want to talk to your bot in Slack (instead of through the command line) do the following:
