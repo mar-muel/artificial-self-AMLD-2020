@@ -1,7 +1,9 @@
 # Meet your Artificial Self: Generate text that sounds like you
 Welcome! You will find all resources, datasets, and code for the workshop here!
 
-:construction: Repo still under some construction (but we're getting there ;) :construction:
+Feel free to join our Gitter during the workshop:
+
+[![Gitter](https://badges.gitter.im/artificial-self-AMLD-2020/community.svg)](https://gitter.im/artificial-self-AMLD-2020/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 This repository contains all resources for the [Applied Machine Learning Days](https://appliedmldays.org/) workshop [Meet your Artificial Self: Generate text that sounds like you](https://appliedmldays.org/workshops/meet-your-artificial-self-generate-text-that-sounds-like-you).
 
