@@ -1,13 +1,17 @@
 # Meet your Artificial Self: Generate text that sounds like you
 Welcome! You will find all resources, datasets, and code for the workshop here!
 
+This repository contains all resources for the [Applied Machine Learning Days](https://appliedmldays.org/) workshop [Meet your Artificial Self: Generate text that sounds like you](https://appliedmldays.org/workshops/meet-your-artificial-self-generate-text-that-sounds-like-you).
+
+In this workshop, participants are tasked to download their own chat logs and build a chat bot that generates text similar to their writing. As an alternative to using chat logs, we provide a number of other conversational (and non-conversational datasets) datasets in this repository.
+
+## Gitter
 Feel free to join our Gitter during the workshop:
 
 [![Gitter](https://badges.gitter.im/artificial-self-AMLD-2020/community.svg)](https://gitter.im/artificial-self-AMLD-2020/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-This repository contains all resources for the [Applied Machine Learning Days](https://appliedmldays.org/) workshop [Meet your Artificial Self: Generate text that sounds like you](https://appliedmldays.org/workshops/meet-your-artificial-self-generate-text-that-sounds-like-you).
-
-In this workshop, participants are tasked to download their own chat logs and build a chat bot that generates text similar to their writing. As an alternative to using chat logs, we provide a number of other conversational (and non-conversational datasets) datasets in this repository.
+## Slides
+Find the workshop slides [here](https://docs.google.com/presentation/d/1-aU5fSWyQN4GwP3KFDy5KorM7c-FJJFjiRp3bJ2sqIY/edit?usp=sharing).
 
 # Usage
 The workshop is split in 3 tasks. You can run each task locally (by cloning this repository) or by running the Colab notebook (see links below). If you run locally, make sure you have access to GPU(s) and you are running Python 3.6+ (also make sure you have sufficient storage space). More detailed instructions are provided in the different subfolders.
