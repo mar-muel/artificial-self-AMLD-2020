@@ -1,6 +1,4 @@
 # Meet your Artificial Self: Generate text that sounds like you
-Welcome! You will find all resources, datasets, and code for the workshop here!
-
 This repository contains all resources for the [Applied Machine Learning Days](https://appliedmldays.org/) workshop [Meet your Artificial Self: Generate text that sounds like you](https://appliedmldays.org/workshops/meet-your-artificial-self-generate-text-that-sounds-like-you).
 
 In this workshop, participants are tasked to download their own chat logs and build a chat bot that generates text similar to their writing. As an alternative to using chat logs, we provide a number of other conversational (and non-conversational datasets) datasets in this repository.
