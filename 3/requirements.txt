@@ -1,4 +1,4 @@
 pandas==0.25.3
 numpy==1.17.3
-transformers==2.3.0
+transformers==4.30.0
 slackclient==2.5.0
